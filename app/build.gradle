@@ -58,6 +58,11 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion"
 
 
+    //Encrypted Shared Preferences
+    implementation "androidx.security:security-crypto:1.1.0-alpha02"
+
+
+
     // Glide: Image Loading
     implementation 'com.github.bumptech.glide:glide:4.11.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'

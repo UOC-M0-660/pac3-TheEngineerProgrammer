@@ -1,15 +1,31 @@
 package edu.uoc.pac3.oauth
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import edu.uoc.pac3.R
+import edu.uoc.pac3.data.SessionManager
+import edu.uoc.pac3.data.TwitchApiService
+import edu.uoc.pac3.data.network.Endpoints
+import edu.uoc.pac3.data.network.Network
+import edu.uoc.pac3.data.oauth.OAuthConstants
 import kotlinx.android.synthetic.main.activity_oauth.*
+import kotlinx.coroutines.launch
+import java.util.*
 
 class OAuthActivity : AppCompatActivity() {
 
     private val TAG = "OAuthActivity"
+    private val uniqueState = UUID.randomUUID().toString()
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,32 +34,69 @@ class OAuthActivity : AppCompatActivity() {
     }
 
     fun buildOAuthUri(): Uri {
-        // TODO: Create URI
-        return Uri.EMPTY
+        return Uri.parse(Endpoints.authorizationUrl)
+            .buildUpon()
+            .appendQueryParameter(OAuthConstants.CLIENT_ID, OAuthConstants.clientId)
+            .appendQueryParameter(OAuthConstants.REDIRECT_URI, OAuthConstants.redirectUri)
+            .appendQueryParameter(OAuthConstants.RESPONSE_TYPE, OAuthConstants.CODE)
+            .appendQueryParameter(OAuthConstants.SCOPE, OAuthConstants.scopes.joinToString(separator = " "))
+            .appendQueryParameter(OAuthConstants.STATE, uniqueState)
+            .build()
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private fun launchOAuthAuthorization() {
         //  Create URI
         val uri = buildOAuthUri()
 
-        // TODO: Set webView Redirect Listener
+        // Set webView Redirect Listener
+        setUpWebRedirectListener()
 
         // Load OAuth Uri
         webView.settings.javaScriptEnabled = true
         webView.loadUrl(uri.toString())
     }
 
+    //Set webView Redirect Listener
+    private fun setUpWebRedirectListener(){
+        webView.webViewClient = object : WebViewClient(){
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                request?.let {
+                    if (request.url.toString().startsWith(OAuthConstants.redirectUri)){
+                        val responseState = request.url.getQueryParameter(OAuthConstants.STATE)
+                        if (responseState == uniqueState){
+                            request.url.getQueryParameter(OAuthConstants.CODE)?.let {code ->
+                                onAuthorizationCodeRetrieved(code)
+                            }?: let {
+                                Log.w(TAG, "Very strange")
+                            }
+                        }
+                    }
+                }
+                return super.shouldOverrideUrlLoading(view, request)
+            }
+        }
+    }
+
     // Call this method after obtaining the authorization code
     // on the WebView to obtain the tokens
     private fun onAuthorizationCodeRetrieved(authorizationCode: String) {
-
         // Show Loading Indicator
         progressBar.visibility = View.VISIBLE
-
-        // TODO: Create Twitch Service
-
-        // TODO: Get Tokens from Twitch
-
-        // TODO: Save access token and refresh token using the SessionManager class
+        // Create Twitch Service
+        val twitchService = TwitchApiService(Network.createHttpClient(this))
+        // Get Tokens from Twitch
+        lifecycleScope.launch {
+            val tokensResponse = twitchService.getTokens(authorizationCode)
+            tokensResponse?.let {
+                val sessionManager = SessionManager(this@OAuthActivity)
+                sessionManager.saveAccessToken(tokensResponse.accessToken)
+                if (tokensResponse.refreshToken == null) return@launch
+                sessionManager.saveAccessToken(tokensResponse.refreshToken)
+            }
+        }
     }
 }
