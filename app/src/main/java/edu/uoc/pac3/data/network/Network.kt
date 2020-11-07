@@ -11,6 +11,7 @@ import io.ktor.client.features.json.serializer.*
 import io.ktor.client.features.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import kotlinx.serialization.json.Json
 import io.ktor.http.ContentType.Application.Json
 
 /**
@@ -57,7 +58,7 @@ object Network {
         }
     }
 
-    private val json = kotlinx.serialization.json.Json {
+    private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
         encodeDefaults = false

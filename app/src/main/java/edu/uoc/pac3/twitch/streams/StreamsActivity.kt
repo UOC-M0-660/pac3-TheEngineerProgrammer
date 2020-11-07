@@ -25,7 +25,6 @@ class StreamsActivity : AppCompatActivity() {
         initRecyclerView()
         //Get Streams
         setUpSteams()
-
     }
 
     private fun initRecyclerView() {
