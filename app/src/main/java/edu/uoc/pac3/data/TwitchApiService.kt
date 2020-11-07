@@ -37,6 +37,9 @@ class TwitchApiService(private val httpClient: HttpClient) {
     suspend fun getStreams(cursor: String? = null): StreamsResponse? = withContext(Dispatchers.IO){
         httpClient.get<StreamsResponse>(Endpoints.streamsUrl){
             header("client-id", OAuthConstants.clientId)
+            cursor?.let {
+                parameter("after", cursor)
+            }
         }
     }
 

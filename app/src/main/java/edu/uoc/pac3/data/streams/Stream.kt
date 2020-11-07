@@ -18,4 +18,10 @@ data class Stream(
 @Serializable
 data class StreamsResponse(
         @SerialName("data") val data: List<Stream>? = null,
+        @SerialName("pagination") val pagination: Pagination? = null
+)
+
+@Serializable
+data class Pagination(
+        @SerialName("cursor") val cursor: String? = null
 )

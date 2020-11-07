@@ -11,7 +11,7 @@ import edu.uoc.pac3.data.streams.Stream
 import kotlinx.android.synthetic.main.item_stream.view.*
 
 
-class StreamsRecyclerAdapter(private var streams: List<Stream>): RecyclerView.Adapter<StreamsRecyclerAdapter.ViewHolder>() {
+class StreamsRecyclerAdapter(val streams: MutableList<Stream>): RecyclerView.Adapter<StreamsRecyclerAdapter.ViewHolder>() {
 
     inner class ViewHolder(itemView: View): RecyclerView.ViewHolder(itemView){
         fun bind(position: Int) = itemView.run {
@@ -40,8 +40,15 @@ class StreamsRecyclerAdapter(private var streams: List<Stream>): RecyclerView.Ad
     override fun getItemCount() = streams.size
 
     fun updateStreams(streams: List<Stream>){
-        this.streams = streams
+        this.streams.clear()
+        this.streams.addAll(streams)
         notifyDataSetChanged()
+    }
+
+    fun addStreams(streams: List<Stream>){
+        val previousSize = this.streams.size
+        this.streams.addAll(streams)
+        notifyItemRangeInserted(previousSize, streams.size)
     }
 
 }
