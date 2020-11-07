@@ -15,5 +15,4 @@ object OAuthConstants {
     const val clientId = "8ro4my8oksr8c5ml7qxeqga4ejjmah"
     const val redirectUri = "http://localhost"
     val scopes = arrayOf("user:edit", "user:read:email")
-
 }

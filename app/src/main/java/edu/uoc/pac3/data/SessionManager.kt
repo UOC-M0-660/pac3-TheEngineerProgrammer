@@ -33,12 +33,12 @@ class SessionManager(private val context: Context) {
         )
     }
 
-    private fun getSharedPreferences(): SharedPreferences{
-        return context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
-    }
+//    private fun getSharedPreferences(): SharedPreferences{
+//        return context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+//    }
 
     fun isUserAvailable(): Boolean {
-        // TODO: Implement
+        if (getAccessToken().isNotEmpty() && getRefreshToken().isNotEmpty()) return true
         return false
     }
 

@@ -2,6 +2,7 @@ package edu.uoc.pac3.data.network
 
 import android.content.Context
 import android.util.Log
+import edu.uoc.pac3.data.SessionManager
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.features.*
@@ -18,8 +19,9 @@ import io.ktor.http.ContentType.Application.Json
 object Network {
 
     private const val TAG = "Network"
-
     fun createHttpClient(context: Context): HttpClient { //creo que context: Context sobra, no se para que sirve
+        val accessToken = SessionManager(context).getAccessToken()
+        Log.i(TAG, "createHttpClient: $accessToken") //todo borrar luego
         return HttpClient(OkHttp) {
             // Setup HttpClient
             install(JsonFeature){
@@ -29,7 +31,7 @@ object Network {
             install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
-                        Log.v("Ktor", message)
+                        Log.v("Ktor", message)//todo quitar esto luego por temas de seguridad
                     }
                 }
                 level = LogLevel.ALL
@@ -45,6 +47,7 @@ object Network {
                 //parameter("api_key", "some_api_key")
                 // Content Type
                 if (this.method != HttpMethod.Get) contentType(ContentType.Application.Json)
+                if (accessToken.isNotEmpty()) header("authorization", "Bearer $accessToken")
                 accept(ContentType.Application.Json)
             }
             // Optional OkHttp Interceptors

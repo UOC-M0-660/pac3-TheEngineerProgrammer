@@ -4,6 +4,7 @@ import edu.uoc.pac3.data.network.Endpoints
 import edu.uoc.pac3.data.oauth.OAuthConstants
 import edu.uoc.pac3.data.oauth.OAuthTokensResponse
 import edu.uoc.pac3.data.oauth.UnauthorizedException
+import edu.uoc.pac3.data.streams.Stream
 import edu.uoc.pac3.data.streams.StreamsResponse
 import edu.uoc.pac3.data.user.User
 import io.ktor.client.*
@@ -33,9 +34,10 @@ class TwitchApiService(private val httpClient: HttpClient) {
 
     /// Gets Streams on Twitch
     @Throws(UnauthorizedException::class)
-    suspend fun getStreams(cursor: String? = null): StreamsResponse? {
-        TODO("Get Streams from Twitch")
-        TODO("Support Pagination")
+    suspend fun getStreams(cursor: String? = null): StreamsResponse? = withContext(Dispatchers.IO){
+        httpClient.get<StreamsResponse>(Endpoints.streamsUrl){
+            header("client-id", OAuthConstants.clientId)
+        }
     }
 
     /// Gets Current Authorized User on Twitch

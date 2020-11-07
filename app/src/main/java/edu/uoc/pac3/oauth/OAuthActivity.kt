@@ -1,6 +1,7 @@
 package edu.uoc.pac3.oauth
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -16,6 +17,7 @@ import edu.uoc.pac3.data.TwitchApiService
 import edu.uoc.pac3.data.network.Endpoints
 import edu.uoc.pac3.data.network.Network
 import edu.uoc.pac3.data.oauth.OAuthConstants
+import edu.uoc.pac3.twitch.streams.StreamsActivity
 import kotlinx.android.synthetic.main.activity_oauth.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -69,7 +71,11 @@ class OAuthActivity : AppCompatActivity() {
                         val responseState = request.url.getQueryParameter(OAuthConstants.STATE)
                         if (responseState == uniqueState){
                             request.url.getQueryParameter(OAuthConstants.CODE)?.let {code ->
+
                                 onAuthorizationCodeRetrieved(code)
+                                webView.visibility = View.GONE
+                                progressBar.visibility = View.VISIBLE
+
                             }?: let {
                                 Log.w(TAG, "Very strange")
                             }
@@ -94,9 +100,19 @@ class OAuthActivity : AppCompatActivity() {
             tokensResponse?.let {
                 val sessionManager = SessionManager(this@OAuthActivity)
                 sessionManager.saveAccessToken(tokensResponse.accessToken)
-                if (tokensResponse.refreshToken == null) return@launch
-                sessionManager.saveAccessToken(tokensResponse.refreshToken)
+                tokensResponse.refreshToken?.let {
+                    sessionManager.saveRefreshToken(tokensResponse.refreshToken)
+                }
+                goToStreamsActivity()
             }
         }
     }
+
+    private fun goToStreamsActivity(){
+        Intent(this, StreamsActivity::class.java).run {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+    }
+
 }
