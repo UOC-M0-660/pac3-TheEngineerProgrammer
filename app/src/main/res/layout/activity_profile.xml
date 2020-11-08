@@ -15,7 +15,7 @@
         tools:context=".twitch.profile.ProfileActivity">
 
         <ImageView
-            android:id="@+id/imageView"
+            android:id="@+id/imageViewUser"
             android:layout_width="@dimen/profile_image_size"
             android:layout_height="@dimen/profile_image_size"
             tools:src="@mipmap/ic_launcher" />
@@ -33,12 +33,21 @@
                 app:tint="@color/colorOnBackground"
                 android:layout_marginEnd="@dimen/margin_small"
                 android:src="@drawable/ic_eye"/>
+
             <TextView
                 android:id="@+id/viewsText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/colorOnBackground"
-                tools:text="100 Views"/>
+                tools:text="100" />
+
+            <TextView
+                android:id="@+id/viewsText2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="@string/views"
+                android:textColor="@color/colorOnBackground" />
         </LinearLayout>
 
         <TextView

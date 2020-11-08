@@ -9,6 +9,7 @@ import android.view.View
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import edu.uoc.pac3.R
@@ -17,6 +18,8 @@ import edu.uoc.pac3.data.TwitchApiService
 import edu.uoc.pac3.data.network.Endpoints
 import edu.uoc.pac3.data.network.Network
 import edu.uoc.pac3.data.oauth.OAuthConstants
+import edu.uoc.pac3.tools.goToActivity
+import edu.uoc.pac3.tools.playGoAnimation
 import edu.uoc.pac3.twitch.streams.StreamsActivity
 import kotlinx.android.synthetic.main.activity_oauth.*
 import kotlinx.coroutines.launch
@@ -71,13 +74,12 @@ class OAuthActivity : AppCompatActivity() {
                         val responseState = request.url.getQueryParameter(OAuthConstants.STATE)
                         if (responseState == uniqueState){
                             request.url.getQueryParameter(OAuthConstants.CODE)?.let {code ->
-
                                 onAuthorizationCodeRetrieved(code)
                                 webView.visibility = View.GONE
                                 progressBar.visibility = View.VISIBLE
 
                             }?: let {
-                                Log.w(TAG, "Very strange")
+                                Toast.makeText(this@OAuthActivity, getString(R.string.error_oauth), Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -93,7 +95,8 @@ class OAuthActivity : AppCompatActivity() {
         // Show Loading Indicator
         progressBar.visibility = View.VISIBLE
         // Create Twitch Service
-        val twitchService = TwitchApiService(Network.createHttpClient(this))
+        val client = Network.createHttpClient(this)
+        val twitchService = TwitchApiService(client)
         // Get Tokens from Twitch
         lifecycleScope.launch {
             val tokensResponse = twitchService.getTokens(authorizationCode)
@@ -103,19 +106,20 @@ class OAuthActivity : AppCompatActivity() {
                 tokensResponse.refreshToken?.let {
                     sessionManager.saveRefreshToken(tokensResponse.refreshToken)
                 }
+                client.close()
                 goToStreamsActivity()
             } ?: run {
                 webView.visibility = View.VISIBLE
                 progressBar.visibility = View.GONE
+                Toast.makeText(this@OAuthActivity, getString(R.string.error_oauth), Toast.LENGTH_SHORT).show()
             }
         }
     }
-
     private fun goToStreamsActivity(){
-        val intent = Intent(this, StreamsActivity::class.java).apply {
+        goToActivity<StreamsActivity> {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        startActivity(intent)
+        playGoAnimation()
     }
 
 }

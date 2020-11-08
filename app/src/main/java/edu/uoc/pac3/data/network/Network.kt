@@ -18,7 +18,6 @@ import io.ktor.http.ContentType.Application.Json
  * Created by alex on 07/09/2020.
  */
 object Network {
-
     private const val TAG = "Network"
     fun createHttpClient(context: Context): HttpClient { //creo que context: Context sobra, no se para que sirve
         val accessToken = SessionManager(context).getAccessToken()
@@ -29,10 +28,10 @@ object Network {
                 serializer = KotlinxSerializer(json)
             }
             // Logging
-            install(Logging) {
+            install(Logging) {//todo quitar esto luego por temas de seguridad
                 logger = object : Logger {
                     override fun log(message: String) {
-                        Log.v("Ktor", message)//todo quitar esto luego por temas de seguridad
+                        Log.v("Ktor", message)
                     }
                 }
                 level = LogLevel.ALL
@@ -45,7 +44,6 @@ object Network {
             }
             // Apply to All Requests
             defaultRequest {
-                //parameter("api_key", "some_api_key")
                 // Content Type
                 if (this.method != HttpMethod.Get) contentType(ContentType.Application.Json)
                 if (accessToken.isNotEmpty()) header("authorization", "Bearer $accessToken")

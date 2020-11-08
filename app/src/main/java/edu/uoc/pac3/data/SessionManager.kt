@@ -38,8 +38,7 @@ class SessionManager(private val context: Context) {
 //    }
 
     fun isUserAvailable(): Boolean {
-        if (getAccessToken().isNotEmpty() && getRefreshToken().isNotEmpty()) return true
-        return false
+        return getAccessToken().isNotEmpty() && getRefreshToken().isNotEmpty()
     }
 
     fun getAccessToken(): String {
