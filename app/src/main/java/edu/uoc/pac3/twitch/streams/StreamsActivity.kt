@@ -22,6 +22,7 @@ import edu.uoc.pac3.oauth.LoginActivity
 import edu.uoc.pac3.tools.goToActivity
 import edu.uoc.pac3.tools.playGoAnimation
 import edu.uoc.pac3.twitch.profile.ProfileActivity
+import io.ktor.client.features.*
 import kotlinx.android.synthetic.main.activity_streams.*
 import kotlinx.coroutines.launch
 
@@ -55,20 +56,8 @@ class StreamsActivity : AppCompatActivity() {
     }
 
     private fun setUpSteams(){
-        val client = Network.createHttpClient(this)
-        val service = TwitchApiService(client)
         lifecycleScope.launch {
-            var streamsResponse: StreamsResponse? = null
-            try {
-                streamsResponse = service.getStreams()
-            }catch (e: UnauthorizedException){
-                refreshToken(service)
-                try {
-                    streamsResponse = service.getStreams()
-                }catch (e: UnauthorizedException){
-                    logout()
-                }
-            }
+            val streamsResponse = loadStreams()
             streamsResponse?.let {
                 streamsResponse.data?.let {streams->
                     adapter.updateStreams(streams)
@@ -79,8 +68,33 @@ class StreamsActivity : AppCompatActivity() {
             }?: run {
                 Toast.makeText(this@StreamsActivity, getString(R.string.error_streams), Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    //cargar streams
+    private suspend fun loadStreams(cursor: String? = null): StreamsResponse?{
+        val client = Network.createHttpClient(this)
+        val service = TwitchApiService(client)
+        var streamsResponse: StreamsResponse? = null
+        try {
+            streamsResponse = service.getStreams(cursor)
+            Log.i(TAG, "setUpSteams: try1")
+        } catch (e: ClientRequestException) {
+            refreshToken(service)
+            val client2 = Network.createHttpClient(this@StreamsActivity)
+            val service2 = TwitchApiService(client2)
+            try {
+                Log.i(TAG, "setUpSteams: try2 nuevo token ${SessionManager(this@StreamsActivity).getAccessToken()}")
+                streamsResponse = service2.getStreams(cursor)
+            } catch (e: ClientRequestException) {
+                logout()
+            } finally {
+                client2.close()
+            }
+        } finally {
             client.close()
         }
+        return streamsResponse
     }
 
     private fun setUpEndlessRecycler(){
@@ -102,20 +116,8 @@ class StreamsActivity : AppCompatActivity() {
     }
 
     private fun loadMore(){
-        val client = Network.createHttpClient(this)
-        val service = TwitchApiService(client)
         lifecycleScope.launch {
-            var streamsResponse: StreamsResponse? = null
-            try {
-                streamsResponse = service.getStreams(cursor)
-            }catch (e: UnauthorizedException){
-                refreshToken(service)
-                try {
-                    streamsResponse = service.getStreams(cursor)
-                }catch (e: UnauthorizedException){
-                    logout()
-                }
-            }
+            val streamsResponse: StreamsResponse? = loadStreams(cursor)
             streamsResponse?.let {
                 streamsResponse.data?.let {streams->
                     adapter.addStreams(streams)
@@ -126,7 +128,6 @@ class StreamsActivity : AppCompatActivity() {
             }?: run {
                 Toast.makeText(this@StreamsActivity, getString(R.string.error_streams), Toast.LENGTH_SHORT).show()
             }
-            client.close()
         }
         isLoading = false
     }
@@ -172,15 +173,24 @@ class StreamsActivity : AppCompatActivity() {
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 
+    //He comprobado que el refreshToken también puede lanzar una excepción de ClientRequestException
+    //la respuesta 400. En ese caso simplemente cierro la sessión.
     private suspend fun refreshToken(service: TwitchApiService){
         val sessionManager = SessionManager(this)
         sessionManager.clearAccessToken()
-        service.getTokensRefresh(sessionManager.getRefreshToken())?.let {tokensResponse ->
-            sessionManager.saveAccessToken(tokensResponse.accessToken)
-            tokensResponse.refreshToken?.let {
-                sessionManager.saveRefreshToken(it)
+        try {
+            Log.i(TAG, "refreshToken: try")
+            service.getTokensRefresh(sessionManager.getRefreshToken())?.let {tokensResponse ->
+                Log.i(TAG, "refreshToken: nuevo access token ${tokensResponse.accessToken}")
+                sessionManager.saveAccessToken(tokensResponse.accessToken)
+                tokensResponse.refreshToken?.let {
+                    sessionManager.saveRefreshToken(it)
+                }
             }
+        }catch (e: ClientRequestException){
+            logout()
         }
+
     }
 
 }

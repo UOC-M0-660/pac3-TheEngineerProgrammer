@@ -18,6 +18,7 @@ import edu.uoc.pac3.oauth.LoginActivity
 import edu.uoc.pac3.tools.goToActivity
 import edu.uoc.pac3.tools.playBackAnimation
 import edu.uoc.pac3.tools.playGoAnimation
+import io.ktor.client.features.*
 import kotlinx.android.synthetic.main.activity_profile.*
 import kotlinx.coroutines.launch
 
@@ -40,18 +41,24 @@ class ProfileActivity : AppCompatActivity() {
             var user: User? = null
             try {
                 user = service.getUser()
-            }catch (e: UnauthorizedException){
+            }catch (e: ClientRequestException){
                 refreshToken(service)
+                val client2 = Network.createHttpClient(this@ProfileActivity)
+                val service2 = TwitchApiService(client2)
                 try {
-                    user = service.getUser()
-                }catch (e: UnauthorizedException){
+                    user = service2.getUser()
+                }catch (e: ClientRequestException){
                     logout()
+                }finally {
+                    client2.close()
                 }
+            }finally {
+                client.close()
             }
             user?.let {
                 updateUI(it)
             }
-            client.close()
+
         }
     }
 
@@ -59,12 +66,17 @@ class ProfileActivity : AppCompatActivity() {
     private suspend fun refreshToken(service: TwitchApiService){
         val sessionManager = SessionManager(this)
         sessionManager.clearAccessToken()
-        service.getTokensRefresh(sessionManager.getRefreshToken())?.let {tokensResponse ->
-            sessionManager.saveAccessToken(tokensResponse.accessToken)
-            tokensResponse.refreshToken?.let {
-                sessionManager.saveRefreshToken(it)
+        try {
+            service.getTokensRefresh(sessionManager.getRefreshToken())?.let {tokensResponse ->
+                sessionManager.saveAccessToken(tokensResponse.accessToken)
+                tokensResponse.refreshToken?.let {
+                    sessionManager.saveRefreshToken(it)
+                }
             }
+        }catch (e: ClientRequestException){
+            logout()
         }
+
     }
 
     //actualizar UI
@@ -100,22 +112,26 @@ class ProfileActivity : AppCompatActivity() {
             var user: User? = null
             try {
                 user = service.updateUserDescription(description)
-            }catch (e: UnauthorizedException){
+            }catch (e: ClientRequestException){
                 refreshToken(service)
+                val client2 = Network.createHttpClient(this@ProfileActivity)
+                val service2 = TwitchApiService(client2)
                 try {
-                    user = service.updateUserDescription(description)
-                }catch (e: UnauthorizedException){
+                    user = service2.updateUserDescription(description)
+                }catch (e: ClientRequestException){
                     logout()
+                }finally {
+                    client2.close()
                 }
+            }finally {
+                client.close()
             }
-
             user?.let {
                 userDescriptionEditText.clearFocus()
                 Toast.makeText(this@ProfileActivity, getString(R.string.description_success), Toast.LENGTH_SHORT).show()
             }?: run{
                 Toast.makeText(this@ProfileActivity, getString(R.string.error_profile_update), Toast.LENGTH_SHORT).show()
             }
-            client.close()
         }
     }
 

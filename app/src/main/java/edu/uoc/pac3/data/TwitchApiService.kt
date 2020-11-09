@@ -9,6 +9,7 @@ import edu.uoc.pac3.data.streams.StreamsResponse
 import edu.uoc.pac3.data.user.User
 import edu.uoc.pac3.data.user.UserResponse
 import io.ktor.client.*
+import io.ktor.client.features.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -82,6 +83,7 @@ class TwitchApiService(private val httpClient: HttpClient) {
 //        }
 //    }
 
+    @Throws(ClientRequestException::class)
     suspend fun getTokensRefresh(refreshToken: String): OAuthTokensResponse? = withContext(Dispatchers.IO){
         httpClient.post<OAuthTokensResponse>(Endpoints.tokenUrl){
             parameter(OAuthConstants.CLIENT_ID, OAuthConstants.clientId)
