@@ -4,7 +4,6 @@ import edu.uoc.pac3.data.network.Endpoints
 import edu.uoc.pac3.data.oauth.OAuthConstants
 import edu.uoc.pac3.data.oauth.OAuthTokensResponse
 import edu.uoc.pac3.data.oauth.UnauthorizedException
-import edu.uoc.pac3.data.streams.Stream
 import edu.uoc.pac3.data.streams.StreamsResponse
 import edu.uoc.pac3.data.user.User
 import edu.uoc.pac3.data.user.UserResponse
@@ -24,6 +23,7 @@ class TwitchApiService(private val httpClient: HttpClient) {
     // como dice que es secreto, pienso que no lo puedo poner lo como público
 
     /// Gets Access and Refresh Tokens on Twitch
+    @Throws(ClientRequestException::class)//Este puede lanzar el 400
     suspend fun getTokens(authorizationCode: String): OAuthTokensResponse? = withContext(Dispatchers.IO){
         httpClient.post<OAuthTokensResponse>(Endpoints.tokenUrl){
             parameter(OAuthConstants.CLIENT_ID, OAuthConstants.clientId)
@@ -37,11 +37,19 @@ class TwitchApiService(private val httpClient: HttpClient) {
     /// Gets Streams on Twitch
     @Throws(UnauthorizedException::class)
     suspend fun getStreams(cursor: String? = null): StreamsResponse? = withContext(Dispatchers.IO){
-        httpClient.get<StreamsResponse>(Endpoints.streamsUrl){
-            header("client-id", OAuthConstants.clientId)
-            cursor?.let {
-                parameter("after", cursor)
+        return@withContext try {
+            httpClient.get<StreamsResponse>(Endpoints.streamsUrl) {
+                header("client-id", OAuthConstants.clientId)
+                cursor?.let {
+                    parameter("after", cursor)
+                }
             }
+        }catch (e: Exception){
+            e.printStackTrace()
+            if (e is ClientRequestException && e.response?.status?.value == 401){
+                throw UnauthorizedException
+            }
+            null
         }
     }
 
@@ -49,11 +57,19 @@ class TwitchApiService(private val httpClient: HttpClient) {
     @Throws(UnauthorizedException::class)
     suspend fun getUser(): User? {
         val users = withContext(Dispatchers.IO){
-            httpClient.get<UserResponse>(Endpoints.usersUrl){
-                header("client-id", OAuthConstants.clientId)
+            return@withContext try {
+                httpClient.get<UserResponse>(Endpoints.usersUrl) {
+                    header("client-id", OAuthConstants.clientId)
+                }
+            }catch (e: Exception){
+                e.printStackTrace()
+                if (e is ClientRequestException && e.response?.status?.value == 401){
+                    throw UnauthorizedException
+                }
+                null
             }
         }
-        users.data?.let {
+        users?.data?.let {
             return it[0]
         }
         return null
@@ -63,27 +79,27 @@ class TwitchApiService(private val httpClient: HttpClient) {
     @Throws(UnauthorizedException::class)
     suspend fun updateUserDescription(description: String): User? {
         val users = withContext(Dispatchers.IO){
-            httpClient.put<UserResponse>(Endpoints.usersUrl){
-                header("client-id", OAuthConstants.clientId)
-                parameter("description", description)
+            return@withContext try {
+                httpClient.put<UserResponse>(Endpoints.usersUrl) {
+                    header("client-id", OAuthConstants.clientId)
+                    parameter("description", description)
+                }
+            }catch (e: Exception){
+                e.printStackTrace()
+                if (e is ClientRequestException && e.response?.status?.value == 401){
+                    throw UnauthorizedException
+                }
+                null
             }
         }
-        users.data?.let {
+        users?.data?.let {
             return it[0]
         }
         return null
     }
 
-//    suspend fun revokeToken(accessToken: String){
-//        withContext(Dispatchers.IO){
-//            httpClient.post<String>(Endpoints.revokeUrl){
-//                parameter("client_id", OAuthConstants.clientId)
-//                parameter("token", accessToken)
-//            }
-//        }
-//    }
 
-    @Throws(ClientRequestException::class)
+    @Throws(ClientRequestException::class)//Este puede lanzar el 400
     suspend fun getTokensRefresh(refreshToken: String): OAuthTokensResponse? = withContext(Dispatchers.IO){
         httpClient.post<OAuthTokensResponse>(Endpoints.tokenUrl){
             parameter(OAuthConstants.CLIENT_ID, OAuthConstants.clientId)

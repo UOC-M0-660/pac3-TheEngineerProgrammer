@@ -21,6 +21,7 @@ import edu.uoc.pac3.data.oauth.OAuthConstants
 import edu.uoc.pac3.tools.goToActivity
 import edu.uoc.pac3.tools.playGoAnimation
 import edu.uoc.pac3.twitch.streams.StreamsActivity
+import io.ktor.client.features.*
 import kotlinx.android.synthetic.main.activity_oauth.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -74,10 +75,14 @@ class OAuthActivity : AppCompatActivity() {
                         val responseState = request.url.getQueryParameter(OAuthConstants.STATE)
                         if (responseState == uniqueState){
                             request.url.getQueryParameter(OAuthConstants.CODE)?.let {code ->
-                                onAuthorizationCodeRetrieved(code)
-                                webView.visibility = View.GONE
-                                progressBar.visibility = View.VISIBLE
-
+                                try {
+                                    onAuthorizationCodeRetrieved(code)
+                                    webView.visibility = View.GONE
+                                    progressBar.visibility = View.VISIBLE
+                                }catch (e: ClientRequestException){
+                                    e.printStackTrace()
+                                    Toast.makeText(this@OAuthActivity, getString(R.string.error_oauth), Toast.LENGTH_SHORT).show()
+                                }
                             }?: let {
                                 Toast.makeText(this@OAuthActivity, getString(R.string.error_oauth), Toast.LENGTH_SHORT).show()
                             }

@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.squareup.picasso.Picasso
 import edu.uoc.pac3.R
+import edu.uoc.pac3.data.MyCookies
 import edu.uoc.pac3.data.SessionManager
 import edu.uoc.pac3.data.TwitchApiService
 import edu.uoc.pac3.data.network.Network
@@ -41,13 +42,13 @@ class ProfileActivity : AppCompatActivity() {
             var user: User? = null
             try {
                 user = service.getUser()
-            }catch (e: ClientRequestException){
+            }catch (e: UnauthorizedException){
                 refreshToken(service)
                 val client2 = Network.createHttpClient(this@ProfileActivity)
                 val service2 = TwitchApiService(client2)
                 try {
                     user = service2.getUser()
-                }catch (e: ClientRequestException){
+                }catch (e: UnauthorizedException){
                     logout()
                 }finally {
                     client2.close()
@@ -112,13 +113,13 @@ class ProfileActivity : AppCompatActivity() {
             var user: User? = null
             try {
                 user = service.updateUserDescription(description)
-            }catch (e: ClientRequestException){
+            }catch (e: UnauthorizedException){
                 refreshToken(service)
                 val client2 = Network.createHttpClient(this@ProfileActivity)
                 val service2 = TwitchApiService(client2)
                 try {
                     user = service2.updateUserDescription(description)
-                }catch (e: ClientRequestException){
+                }catch (e: UnauthorizedException){
                     logout()
                 }finally {
                     client2.close()
@@ -137,12 +138,7 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun logout(){
         val sessionManager = SessionManager(this)
-//        val client = Network.createHttpClient(this)
-//        val service = TwitchApiService(client)
-//        lifecycleScope.launch {
-//            service.revokeToken(sessionManager.getAccessToken())
-//            client.close()
-//        }
+        MyCookies.clearCookies(this)
         sessionManager.clearAccessToken()
         sessionManager.clearRefreshToken()
         goToActivity<LoginActivity>{

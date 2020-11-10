@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import edu.uoc.pac3.R
 import edu.uoc.pac3.adapters.StreamsRecyclerAdapter
+import edu.uoc.pac3.data.MyCookies
 import edu.uoc.pac3.data.SessionManager
 import edu.uoc.pac3.data.TwitchApiService
 import edu.uoc.pac3.data.network.Network
@@ -79,14 +80,14 @@ class StreamsActivity : AppCompatActivity() {
         try {
             streamsResponse = service.getStreams(cursor)
             Log.i(TAG, "setUpSteams: try1")
-        } catch (e: ClientRequestException) {
+        } catch (e: UnauthorizedException) {
             refreshToken(service)
             val client2 = Network.createHttpClient(this@StreamsActivity)
             val service2 = TwitchApiService(client2)
             try {
                 Log.i(TAG, "setUpSteams: try2 nuevo token ${SessionManager(this@StreamsActivity).getAccessToken()}")
                 streamsResponse = service2.getStreams(cursor)
-            } catch (e: ClientRequestException) {
+            } catch (e: UnauthorizedException) {
                 logout()
             } finally {
                 client2.close()
@@ -159,14 +160,9 @@ class StreamsActivity : AppCompatActivity() {
 
     private fun logout(){
         val sessionManager = SessionManager(this)
-//        val client = Network.createHttpClient(this)
-//        val service = TwitchApiService(client)
-//        lifecycleScope.launch {
-//            service.revokeToken(sessionManager.getAccessToken())
-//            client.close()
-//        }
         sessionManager.clearAccessToken()
         sessionManager.clearRefreshToken()
+        MyCookies.clearCookies(this)
         goToActivity<LoginActivity>{
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
