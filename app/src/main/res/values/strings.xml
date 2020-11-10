@@ -22,4 +22,8 @@
     <string name="error_streams">Error getting Streams</string>
     <string name="error_profile">Error getting Profile</string>
     <string name="error_profile_update">Error updating profile</string>
+    <string name="unexpected_error">An unexpected error occurred</string>
+    <string name="no_empty_description">Description can\'t be empty</string>
+    <string name="description_success">Description successfully updated</string>
+    <string name="views">Views</string>
 </resources>
